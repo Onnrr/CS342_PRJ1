@@ -7,79 +7,69 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 
 #define MEMORY_NAME "mem"
+#define MAX_WORD_LENGTH 64
+#define MAX_WORDS 1000
 
 void findFreq(char* file_name, void *memory, int num_of_words) {
-    FILE *f = fopen(file_name, "r");
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    FILE *fp;
+    fp = fopen(file_name, "r");
+    if (fp == NULL) {
+        printf("Error: Unable to open file %s\n", file_name);
+        exit(1);
+    }
 
-    char *str = malloc(fsize + 1);
-    fread(str, fsize, 1, f);
-    fclose(f);
+    char words[MAX_WORDS][MAX_WORD_LENGTH];
+    int frequencies[MAX_WORDS] = {0};
+    int num_words = 0;
 
-    str[fsize] = 0;
-    int count = 0, c = 0, i, j = 0, k, space = 0;
-    char p[1000][512], str1[512], freq[1000][512];
-    char *ptr;
-    for (i = 0; i < strlen(str); i++) {
-        if ((str[i] == ' ') || (str[i] == '\t')) {
-            space++;
+    char word[MAX_WORD_LENGTH];
+    while (fscanf(fp, "%s", word) != EOF) {
+        // Convert the word to lowercase
+        for (int i = 0; word[i]; i++) {
+            word[i] = tolower(word[i]);
         }
-    }
-    for (i = 0, j = 0, k = 0; j < strlen(str); j++) {
-        if ((str[j] == ' ') || (str[j] == 44) || (str[j] == 46)) {
-            p[i][k] = '\0';
-            i++;
-            k = 0;
-        } else
-            p[i][k++] = str[j];
-    }
-    k = 0;
-    for (i = 0; i <= space; i++) {
-        for (j = 0; j <= space; j++) {
-            if (i == j) {
-                strcpy(freq[k], p[i]);
-                k++;
-                count++;
+
+        // Check if the word already exists in the array
+        int found = 0;
+        for (int i = 0; i < num_words; i++) {
+            if (strcmp(word, words[i]) == 0) {
+                frequencies[i]++;
+                found = 1;
                 break;
-            } else {
-                if (strcmp(freq[j], p[i]) != 0)
-                    continue;
-                else
-                    break;
             }
         }
-    }
-    char* words[count];
-    int fr[count];
-    for (i = 0; i < count; i++) {
-        for (j = 0; j <= space; j++) {
-            if (strcmp(freq[i], p[j]) == 0)
-                c++;
+
+        // If the word is not found, add it to the array
+        if (!found) {
+            strncpy(words[num_words], word, MAX_WORD_LENGTH);
+            frequencies[num_words] = 1;
+            num_words++;
         }
-        words[i] = freq[i];
-        fr[i] = c;
     }
-    int max = 0;
+
+    int max = frequencies[0];
     int max_index = 0;
     for (int i = 0; i < num_of_words; i++) {
-        for (int j = 0; j < count; j++) {
-            if (fr[i] > max) {
-                max = fr[i];
-                max_index = i;
+        max = frequencies[0];
+        max_index = 0;
+        for (int j = 0; j < num_words; j++) {
+            if (frequencies[j] > max) {
+                max = frequencies[j];
+                max_index = j;
             }
         }
-        sprintf(memory + i * 16, "%s", freq[max_index]);
-        char p[100];
+        sprintf(memory + i * 16, "%s", words[max_index]);
+        char p[50];
         sprintf(p, "%d", max);
         sprintf(memory + i * 16 + 8, "%s", p);
-        printf("Added to memory %s %s", freq[max_index], p);
-        fr[max_index] = 0;
+        printf("Added to memory %s %s", words[max_index], p);
+        frequencies[max_index] = 0;
     }
 }
+
 
 int main(int argc, char *argv[]) {
     pid_t pid;
@@ -138,22 +128,25 @@ int main(int argc, char *argv[]) {
             printf("File değişti\n");
             for (int j = 0; j < num_of_words; j++) {
                 printf("%s\n",(char*)child_mem_start + 16 * j);
+                isUnique = 1;
                 for (int wordIndex = 0; wordIndex < unique_words; wordIndex++) {
                     if (strcmp(words[wordIndex], (char*)child_mem_start + 16 * j) == 0) {
                         printf("Uniq değil");
                         isUnique = 0;
                         int fr = atoi((char*)child_mem_start + 16 * j + 8);
+                        printf("%d\n", fr);
                         freq[wordIndex] += fr;
+                        printf("%d\n", fr);
                     }
                 }
                 if (isUnique) {
+                    printf("Uniq\n");
                     words[unique_words] = (char*)child_mem_start + 16 * j;
                     int fr = atoi((char*)child_mem_start + 16 * j + 8);
+                    printf("%d\n", fr);
                     freq[unique_words] = fr;
                     unique_words++;
                 }
-                // fprintf(out, "%s", (char*)child_mem_start + 16 * j);
-                // fprintf(out, " %s\n", (char*)child_mem_start + 16 * j + 8);
             }
             child_mem_start += 16 * num_of_words;
         }
