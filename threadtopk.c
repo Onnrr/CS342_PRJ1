@@ -193,7 +193,7 @@ void *findFrequents(void *arguments) {
 }
 
 int main(int argc, char *argv[]) {
-
+    (void)argc;
     int num_of_words = atoi(argv[1]);
     char* out_file_name = argv[2];
     int num_of_files = atoi(argv[3]);
@@ -212,10 +212,10 @@ int main(int argc, char *argv[]) {
         
         int success = pthread_create(&tid[i], &attr, findFrequents, (void *)&arguments[i]);
         if (success != 0) {
-            printf("Thread cannot be created.");
+            // printf("Thread cannot be created.");
         }
         else {
-            printf("Thread executing %s\n", file_name);
+            // printf("Thread executing %s\n", file_name);
         }
     }
 
