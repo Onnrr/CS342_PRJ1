@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include <string.h>
 
+#define MAXWORDS 1000
+
 struct Node** roots;
 
 struct args {
@@ -14,16 +16,16 @@ struct args {
 
 struct Node {
     struct Node* prev;
-    char* word;
+    char word[64];
     int frequency;
     struct Node* next;
 };
 
-struct Node* createNode(char* word, int frequency) {
+struct Node* createNode(char word[64], int frequency) {
     struct Node* newNode = (struct Node*) malloc(sizeof(struct Node));
 
     newNode->prev = newNode->next = NULL;
-    newNode->word = word;
+    strcpy(newNode->word, word);
     newNode->frequency = frequency;
     return newNode;
 }
@@ -51,6 +53,32 @@ void deleteNode(struct Node** root, struct Node* deleteNode) {
     }
 }
 
+void distinctInsert(struct Node** root, struct Node* newNode) {
+
+    // check if list is empty
+    if (*root == NULL) {
+        *root = newNode;
+    }
+    else {
+        struct Node* cur = *root;
+
+        while (cur->next != NULL && strcmp(cur->word, newNode->word) != 0) {
+            cur = cur->next;
+        }
+
+        if (strcmp(cur->word, newNode->word) == 0) {
+            cur->frequency += newNode->frequency;
+            free(newNode);
+        }
+        else {
+            newNode->prev = cur;
+            cur->next = newNode;
+            cur = newNode;
+        }
+        
+    }
+}
+
 void insert(struct Node** root, struct Node* newNode) {
 
     // check if list is empty
@@ -70,10 +98,12 @@ void insert(struct Node** root, struct Node* newNode) {
         struct Node* cur = *root;
 
         while (cur->next != NULL && cur->next->frequency >= newNode->frequency) {
+            if (strcmp(cur->next->word, newNode->word) > 0) {
+                break;
+            }
             cur = cur->next;
         }
 
-        
         if (cur->next != NULL) {
             newNode->next = cur->next;
             newNode->next->prev = newNode;
@@ -81,11 +111,57 @@ void insert(struct Node** root, struct Node* newNode) {
             newNode->prev = cur;
         }
         else {
-            newNode->prev = cur;
+            newNode->next = cur->next;
             cur->next = newNode;
-            cur = newNode;
+            newNode->prev = cur;
         }
-        
+
+    }
+}
+
+void insertionSort(struct Node** root) {
+    struct Node* sorted = NULL;
+    struct Node* current = *root;
+
+    while (current != NULL) {
+        struct Node* next = current->next;
+        current->prev = current->next = NULL;
+        insert(&sorted, current);
+        current = next;
+    }
+
+    *root = sorted;
+}
+
+void displayList(struct Node* root) {
+    if (root == NULL) {
+        printf("List is empty.\n");
+    }
+    else {
+        struct Node* current = root;
+
+        while (current != NULL) {
+            printf("Word: %s, Frequency: %d\n", current->word, current->frequency);
+            current = current->next;
+        }
+        printf("\n");
+    }
+}
+
+void trim(struct Node** root, int n) {
+    if ((*root) != NULL) {
+        struct Node* current = *root;
+
+        for (int i = 1; i < n; i++) {
+            if (current->next == NULL) {
+                return;
+            }
+            current = current->next;
+        }
+
+        while (current->next != NULL) {
+            deleteNode(root, current->next);
+        }
     }
 }
 
@@ -94,9 +170,7 @@ void *findFrequents(void *arguments) {
     FILE *f = fopen(args->file_name, "r");
     int num_of_words = args->num_of_words;
     int index = args->index;
-    printf("%d\n", index);
-    char words[1000][64];
-    int freq[1000] = {0};
+    struct Node** root = &roots[index];
 
     while (!feof(f)) {
         char word[64];
@@ -109,38 +183,13 @@ void *findFrequents(void *arguments) {
             }   
         }
 
-        for (int i = 0; i < 1000; i++) {
-            if (strcmp(word, words[i]) == 0) {
-                freq[i]++;
-                break;
-            }
-            else if (freq[i] == 0) {
-                strcpy(words[i], word);
-                freq[i]++;
-                break;
-            }
-        }
+        struct Node* newNode = createNode(word, 1);
+        distinctInsert(root, newNode);
     }
     fclose(f);
+    insertionSort(root);
+    trim(root, num_of_words);
 
-    struct Node** root = &roots[index];
-    for (int i = 0; i < 1000 && 0 != freq[i] != 0; i++) {
-        struct Node* newNode = createNode(words[i], freq[i]);
-        insert(root, newNode);
-    }
-
-    struct Node* cur = *root;
-    int i = 0;
-    while (cur->next != NULL) {
-        if (i < num_of_words) {
-            cur = cur->next;
-            i++;
-        }
-        else {
-            deleteNode(root, cur->next);
-        }
-    }
-    deleteNode(root, cur);
     pthread_exit(0);
 }
 
@@ -175,11 +224,34 @@ int main(int argc, char *argv[]) {
         pthread_join(tid[i], NULL);
     }
 
+    struct Node* resultRoot;
     for (int i = 0; i < num_of_files; i++) {
-        
-        for (struct Node* c = roots[i]; c != NULL; c = c->next) {
-            printf("Word: %s, Frequency: %d\n", c->word, c->frequency);
+
+        struct Node* current = roots[i];
+        while (current != NULL) {
+            struct Node* next = current->next;
+            current->prev = current->next = NULL;
+            distinctInsert(&resultRoot, current);
+            current = next;
         }
     }
+    insertionSort(&resultRoot);
+    trim(&resultRoot, num_of_words);
+    displayList(resultRoot);
+
+
+    FILE *out;
+    out = fopen(out_file_name, "w+");
+    struct Node* current = resultRoot;
+    struct Node* next = resultRoot;
+
+    while (current != NULL) {
+        fprintf(out, "%s", current->word);
+        fprintf(out, " %d\n", current->frequency);
+        next = current->next;
+        deleteNode(&resultRoot, current);
+        current = next;
+    }
+    fclose(out);
     return 0;
 }
