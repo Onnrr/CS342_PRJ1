@@ -4,8 +4,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#define MAXWORDS 1000
-
 struct Node** roots;
 
 struct args {
@@ -240,7 +238,7 @@ int main(int argc, char *argv[]) {
     trim(&resultRoot, num_of_words);
 
     FILE *out;
-    out = fopen(out_file_name, "w+");
+    out = fopen(out_file_name, "w");
     struct Node* current = resultRoot;
     struct Node* next = resultRoot;
 
