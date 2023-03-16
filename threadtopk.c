@@ -171,6 +171,7 @@ void *findFrequents(void *arguments) {
     int num_of_words = args->num_of_words;
     int index = args->index;
     struct Node** root = &roots[index];
+    *root = NULL;
 
     while (!feof(f)) {
         char word[64];
@@ -224,7 +225,7 @@ int main(int argc, char *argv[]) {
         pthread_join(tid[i], NULL);
     }
 
-    struct Node* resultRoot;
+    struct Node* resultRoot = NULL;
     for (int i = 0; i < num_of_files; i++) {
 
         struct Node* current = roots[i];
@@ -237,8 +238,6 @@ int main(int argc, char *argv[]) {
     }
     insertionSort(&resultRoot);
     trim(&resultRoot, num_of_words);
-    displayList(resultRoot);
-
 
     FILE *out;
     out = fopen(out_file_name, "w+");
@@ -253,5 +252,6 @@ int main(int argc, char *argv[]) {
         current = next;
     }
     fclose(out);
+    free(roots);
     return 0;
 }
