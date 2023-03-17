@@ -151,10 +151,9 @@ void findFreq(char* file_name, void *memory, int num_of_words) {
     FILE *fp;
     fp = fopen(file_name, "r");
 
-    struct Node** root;
+    struct Node* root = NULL;
 
     char word[MAX_WORD_LENGTH];
-    int first = 1;
     while (fscanf(fp, "%s", word) != EOF) {
         // full uppercase
         for (int i = 0; word[i]!='\0'; i++) {
@@ -164,25 +163,27 @@ void findFreq(char* file_name, void *memory, int num_of_words) {
         }
 
         struct Node* newNode = createNode(word, 1);
-        if (first) {
-            *root = newNode;
-            first = 0;
-        }
-        else {
-            distinctInsert(root, newNode);
-        }
+        distinctInsert(&root, newNode);
+        
     }
     fclose(fp);
-    insertionSort(root);
-    trim(root, num_of_words);
+    insertionSort(&root);
+    trim(&root, num_of_words);
 
-    struct Node *ptr = *root;
+    struct Node *ptr = root;
     for (int i = 0; i < num_of_words && ptr != NULL; i++) {
         sprintf(memory + i * 16, "%s", ptr->word);
         char p[50];
         sprintf(p, "%d", ptr->frequency);
         sprintf(memory + i * 16 + 8, "%s", p);
         ptr = ptr->next;
+    }
+
+    struct Node* current = root;
+    while (current != NULL) {
+        struct Node* next = current->next;
+        free(current);
+        current = next;
     }
 }
 
@@ -194,7 +195,7 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
     int num_of_files = atoi(argv[3]);
 
-    const int size = 4096;
+    const int size = 10000;
     int shm_fd;
     void *ptr, *file_name_ptr, *child_ptr, *start, *child_mem_start;
 
