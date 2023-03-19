@@ -2,6 +2,7 @@
 #include <sys/mman.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -189,6 +190,10 @@ void findFreq(char* file_name, void *memory, int num_of_words) {
 
 
 int main(int argc, char *argv[]) {
+
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
     pid_t pid;
     (void)argc;
     int num_of_words = atoi(argv[1]);
@@ -276,5 +281,8 @@ int main(int argc, char *argv[]) {
         fclose(out);
         exit(0);
     }
+
+    gettimeofday(&end_time, NULL);
+    printf("Time elapsed \nseconds: %ld\nmicroseconds: %ld\n", end_time.tv_sec - start_time.tv_sec, end_time.tv_usec - start_time.tv_usec);
     return 0;
 }

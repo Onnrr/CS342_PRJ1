@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/time.h>
 
 struct Node** roots;
 
@@ -193,6 +194,10 @@ void *findFrequents(void *arguments) {
 }
 
 int main(int argc, char *argv[]) {
+
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
     (void)argc;
     int num_of_words = atoi(argv[1]);
     char* out_file_name = argv[2];
@@ -254,5 +259,8 @@ int main(int argc, char *argv[]) {
     }
     fclose(out);
     free(roots);
+
+    gettimeofday(&end_time, NULL);
+    printf("Time elapsed \nseconds: %ld\nmicroseconds: %ld\n", end_time.tv_sec - start_time.tv_sec, end_time.tv_usec - start_time.tv_usec);
     return 0;
 }
