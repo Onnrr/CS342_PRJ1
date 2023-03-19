@@ -96,7 +96,7 @@ void insert(struct Node** root, struct Node* newNode) {
         struct Node* cur = *root;
 
         while (cur->next != NULL && cur->next->frequency >= newNode->frequency) {
-            if (strcmp(cur->next->word, newNode->word) > 0) {
+            if (cur->next->frequency == newNode->frequency && strcmp(cur->next->word, newNode->word) > 0) {
                 break;
             }
             cur = cur->next;

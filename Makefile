@@ -11,5 +11,5 @@ threadtopk: threadtopk.c
 proctopk: proctopk.c
 	gcc $(CFLAGS) -o proctopk proctopk.c
 
-clean:
+clear:
 	rm -f threadtopk proctopk
