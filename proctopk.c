@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
     char* out_file_name = argv[2];
     int num_of_files = atoi(argv[3]);
 
-    const int size = 10000;
+    size_t size = num_of_files * num_of_words * (sizeof(char[64]) + 8) + num_of_files * sizeof(char[64]);
     int shm_fd;
     void *ptr, *file_name_ptr, *child_ptr, *start, *child_mem_start;
 
@@ -285,7 +285,8 @@ int main(int argc, char *argv[]) {
 
         exit(0);
     }
-
+    munmap(start, size);
+    close(shm_fd);
     gettimeofday(&end_time, NULL);
     printf("Time elapsed \nseconds: %ld\nmicroseconds: %ld\n", end_time.tv_sec - start_time.tv_sec, end_time.tv_usec - start_time.tv_usec);
     return 0;
