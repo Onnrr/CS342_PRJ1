@@ -244,10 +244,13 @@ int main(int argc, char *argv[]) {
 
     while (current != NULL) {
         fprintf(out, "%s", current->word);
-        fprintf(out, " %d\n", current->frequency);
+        fprintf(out, " %d", current->frequency);
         next = current->next;
         deleteNode(&resultRoot, current);
         current = next;
+        if (current != NULL) {
+            fprintf(out, "\n");
+        }
     }
     fclose(out);
     free(roots);
