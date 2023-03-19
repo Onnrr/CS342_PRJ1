@@ -19,6 +19,22 @@ struct Node {
     int frequency;
     struct Node* next;
 };
+
+void displayList(struct Node* root) {
+    if (root == NULL) {
+        printf("List is empty.\n");
+    }
+    else {
+        struct Node* current = root;
+
+        while (current != NULL) {
+            printf("Word: %s, Frequency: %d\n", current->word, current->frequency);
+            current = current->next;
+        }
+        printf("\n");
+    }
+}
+
 struct Node* createNode(char word[64], int frequency) {
     struct Node* newNode = (struct Node*) malloc(sizeof(struct Node));
 
@@ -155,7 +171,7 @@ void findFreq(char* file_name, void *memory, int num_of_words) {
     struct Node* root = NULL;
 
     char word[MAX_WORD_LENGTH];
-    while (fscanf(fp, "%s", word) != EOF) {
+    while (fscanf(fp, "%64s", word) != EOF) {
         // full uppercase
         for (int i = 0; word[i]!='\0'; i++) {
             if(word[i] >= 'a' && word[i] <= 'z') {
@@ -173,10 +189,8 @@ void findFreq(char* file_name, void *memory, int num_of_words) {
 
     struct Node *ptr = root;
     for (int i = 0; i < num_of_words && ptr != NULL; i++) {
-        sprintf(memory + i * 16, "%s", ptr->word);
-        char p[50];
-        sprintf(p, "%d", ptr->frequency);
-        sprintf(memory + i * 16 + 8, "%s", p);
+        sprintf(memory + i * (sizeof(char[64]) + 8), "%s", ptr->word);
+        sprintf(memory + i * (sizeof(char[64]) + 8) + sizeof(char[64]), "%d", ptr->frequency);
         ptr = ptr->next;
     }
 
@@ -209,10 +223,10 @@ int main(int argc, char *argv[]) {
 
     ptr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     start = file_name_ptr = ptr;
-    child_mem_start = child_ptr = start + num_of_files * 8;
+    child_mem_start = child_ptr = start + num_of_files * sizeof(char[64]);
 
     for (int i = 0; i < num_of_files; i++) {
-        sprintf(ptr + 8 * i, "%s", argv[4 + i]);
+        sprintf(ptr + sizeof(char[64]) * i, "%s", argv[4 + i]);
     }
 
     for (int i = 0; i < num_of_files; i++) {
@@ -222,9 +236,9 @@ int main(int argc, char *argv[]) {
             exit(-1);
         }
         if (pid == 0) {
-            char* file_name = (char*)(file_name_ptr + (8 * i));
+            char* file_name = (char*)(file_name_ptr + (sizeof(char[64]) * i));
 
-            findFreq(file_name, child_ptr + 16 * num_of_words * i,num_of_words);
+            findFreq(file_name, child_ptr + (sizeof(char[64]) + 8) * num_of_words * i,num_of_words);
 
             break;
         }
@@ -235,50 +249,40 @@ int main(int argc, char *argv[]) {
             wait(NULL);
         }
 
-        char* words[num_of_files * num_of_words];
-        int unique_words = 0;
-        int isUnique = 1;
-        int freq[num_of_files * num_of_words];
+        struct Node* resultRoot = NULL;
         for (int i = 0; i < num_of_files; i++) {
             for (int j = 0; j < num_of_words; j++) {
-                isUnique = 1;
-                for (int wordIndex = 0; wordIndex < unique_words; wordIndex++) {
-                    if (strcmp(words[wordIndex], (char*)child_mem_start + 16 * j) == 0) {
-                        isUnique = 0;
-                        int fr = atoi((char*)child_mem_start + 16 * j + 8);
-                        freq[wordIndex] += fr;
-                    }
-                }
-                if (isUnique) {
-                    words[unique_words] = (char*)child_mem_start + 16 * j;
-                    int fr = atoi((char*)child_mem_start + 16 * j + 8);
-                    freq[unique_words] = fr;
-                    unique_words++;
-                }
+                char* word = (char*)child_mem_start + (sizeof(char[64]) + 8) * j;
+                int fr = atoi((char*)child_mem_start + (sizeof(char[64]) + 8) * j + sizeof(char[64]));
+                struct Node* newNode = createNode(word, fr);
+                distinctInsert(&resultRoot, newNode);
             }
-            child_mem_start += 16 * num_of_words;
+            child_mem_start += (sizeof(char[64]) + 8) * num_of_words;
         }
+        insertionSort(&resultRoot);
+
+        
+        trim(&resultRoot, num_of_words);
+
+
         FILE *out;
         out = fopen(out_file_name, "w");
+        struct Node* current = resultRoot;
+        struct Node* next = resultRoot;
 
-        for (int i = 0; i < num_of_words; i++) {
-            int max = freq[0];
-            int max_index = 0;
-            for (int j = 0; j < unique_words; j++) {
-                if (freq[j] > max) {
-                    max = freq[j];
-                    max_index = j;
-                }
-            }
-            // Found max
-            fprintf(out, "%s", words[max_index]);
-            fprintf(out, " %d", max);
-            if (i != num_of_words - 1) {
+
+        while (current != NULL) {
+            fprintf(out, "%s", current->word);
+            fprintf(out, " %d", current->frequency);
+            next = current->next;
+            deleteNode(&resultRoot, current);
+            current = next;
+            if (current != NULL) {
                 fprintf(out, "\n");
             }
-            freq[max_index] = 0;
         }
         fclose(out);
+
         exit(0);
     }
 

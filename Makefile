@@ -1,5 +1,5 @@
 # make command compiles both
-# make clean command removes executables
+# make clear command removes executables
 
 CFLAGS = -Wall -Wextra -pthread
 
