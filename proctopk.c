@@ -20,21 +20,6 @@ struct Node {
     struct Node* next;
 };
 
-void displayList(struct Node* root) {
-    if (root == NULL) {
-        printf("List is empty.\n");
-    }
-    else {
-        struct Node* current = root;
-
-        while (current != NULL) {
-            printf("Word: %s, Frequency: %d\n", current->word, current->frequency);
-            current = current->next;
-        }
-        printf("\n");
-    }
-}
-
 struct Node* createNode(char word[64], int frequency) {
     struct Node* newNode = (struct Node*) malloc(sizeof(struct Node));
 
@@ -288,6 +273,6 @@ int main(int argc, char *argv[]) {
     munmap(start, size);
     close(shm_fd);
     gettimeofday(&end_time, NULL);
-    printf("Time elapsed \nseconds: %ld\nmicroseconds: %ld\n", end_time.tv_sec - start_time.tv_sec, end_time.tv_usec - start_time.tv_usec);
+    //printf("Time elapsed \nseconds: %ld\nmicroseconds: %ld\n", end_time.tv_sec - start_time.tv_sec, end_time.tv_usec - start_time.tv_usec);
     return 0;
 }

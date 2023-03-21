@@ -132,21 +132,6 @@ void insertionSort(struct Node** root) {
     *root = sorted;
 }
 
-void displayList(struct Node* root) {
-    if (root == NULL) {
-        printf("List is empty.\n");
-    }
-    else {
-        struct Node* current = root;
-
-        while (current != NULL) {
-            printf("Word: %s, Frequency: %d\n", current->word, current->frequency);
-            current = current->next;
-        }
-        printf("\n");
-    }
-}
-
 void trim(struct Node** root, int n) {
     if ((*root) != NULL) {
         struct Node* current = *root;
@@ -261,6 +246,6 @@ int main(int argc, char *argv[]) {
     free(roots);
 
     gettimeofday(&end_time, NULL);
-    printf("Time elapsed \nseconds: %ld\nmicroseconds: %ld\n", end_time.tv_sec - start_time.tv_sec, end_time.tv_usec - start_time.tv_usec);
+    //printf("Time elapsed \nseconds: %ld\nmicroseconds: %ld\n", end_time.tv_sec - start_time.tv_sec, end_time.tv_usec - start_time.tv_usec);
     return 0;
 }
